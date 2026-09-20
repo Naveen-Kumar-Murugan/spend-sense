@@ -6,14 +6,6 @@ import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
-/**
- * Lambda functions for SpendSense.
- *
- * A small, fixed set of functions (one per route group) keeps the deployment
- * simple while preserving the layered handler → controller → service →
- * repository structure inside each bundle. This is a modular monolith on
- * Lambda, not microservices.
- */
 export interface SpendSenseFunctionsProps {
     table: Table;
     bedrockModelId: string;

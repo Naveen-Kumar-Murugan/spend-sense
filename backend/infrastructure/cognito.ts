@@ -46,6 +46,7 @@ export class SpendSenseAuth extends Construct {
             removalPolicy: RemovalPolicy.RETAIN,
         });
 
+        //Creating Cognito App Client
         this.userPoolClient = this.userPool.addClient('WebClient', {
             userPoolClientName: 'spendsense-web',
             generateSecret: false,
