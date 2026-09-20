@@ -9,6 +9,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.swp
+.vite/
 
 node_modules/
 /dist/
