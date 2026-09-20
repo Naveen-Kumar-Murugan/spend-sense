@@ -30,6 +30,7 @@ export interface DashboardResponse {
   monthlySpend: AnalyticsSummary["monthlySpend"];
   topMerchants: AnalyticsSummary["topMerchants"];
   recentTransactions: Transaction[];
+  transactionCount: number;
   recurringPayments: RecurringPayment[];
   estimatedMonthlyRecurring: number;
   insights: Insight[];
@@ -63,6 +64,7 @@ export class DashboardController {
     return {
       month: summary.month,
       totalSpent: summary.totalSpent,
+      transactionCount: summary.transactionCount,
       previousMonthTotal: summary.previousMonthTotal,
       monthOverMonthChange: summary.monthOverMonthChange,
       monthOverMonthChangePercentage: summary.monthOverMonthChangePercentage,
