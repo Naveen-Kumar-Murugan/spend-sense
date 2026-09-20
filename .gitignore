@@ -10,6 +10,7 @@ Thumbs.db
 *.sln
 *.swp
 .vite/
+dist/
 
 node_modules/
 /dist/
