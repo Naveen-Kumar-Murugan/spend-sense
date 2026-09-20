@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
+    --border: 220 20% 93%;
+    --input: 220 20% 93%;
+    --ring: 243 75% 59%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-surface text-ink font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'ss01';
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/60 ring-offset-2 ring-offset-white;
+  }
+
+  /* Tabular figures everywhere money is shown. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-family: theme('fontFamily.numeric');
+  }
+}
+
+@layer components {
+  .card-surface {
+    @apply rounded-2xl border border-line bg-white shadow-card;
+  }
+
+  .field {
+    @apply h-11 w-full rounded-xl border border-line bg-surface-sunken px-3.5 text-sm text-ink
+           placeholder:text-ink-faint transition-colors
+           focus:border-primary/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15
+           disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .label-text {
+    @apply text-xs font-semibold tracking-wide text-ink-muted;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #DDE1E8; border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #C6CCD6; background-clip: content-box; }
