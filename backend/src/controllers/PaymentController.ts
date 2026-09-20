@@ -31,7 +31,7 @@ export class PaymentController {
     return this.service.createPayment(userId, request);
   }
 
-  async createUpiIntent(
+    async createUpiIntent(
     userId: string,
     event: APIGatewayProxyEvent,
   ): Promise<PaymentReceipt> {
@@ -42,6 +42,8 @@ export class PaymentController {
       merchant: parsed.merchant,
       category: parsed.category,
       paymentMethod: parsed.paymentMethod,
+      receiverUpiId: parsed.receiverUpiId,
+      note: parsed.note,
       mode: "UPI",
       currency: "INR",
     };

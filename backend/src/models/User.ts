@@ -8,6 +8,9 @@ export interface User {
     userId: string;
     email: string;
     displayName: string;
+    /** Optional UPI VPA, e.g. naveen@oksbi. Never a UPI PIN or credential. */
+    upiId?: string;
+    location?: string;
     createdAt: string;
     updatedAt: string;
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { PaymentForm, type PaymentSubmitValues } from '@/components/payments/PaymentForm';
@@ -12,6 +13,7 @@ import { formatCurrency } from '@/utils/format';
 
 export default function Payment() {
   const { notify } = useToast();
+  const navigate = useNavigate();
   const [receipt, setReceipt] = useState<PaymentReceipt | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -44,6 +46,9 @@ export default function Payment() {
       const transaction = await confirmUpiPayment(receipt.paymentId);
       setReceipt({ ...receipt, status: transaction.status, message: 'Payment recorded successfully.', transaction });
       notify('Payment confirmed and added to your history.');
+      // Confirmation succeeded — take the user to the dashboard, where the
+      // freshly confirmed transaction now shows up in their history.
+      navigate('/app', { replace: true });
     } catch (cause) {
       notify(toUserMessage(cause), 'error');
     } finally {

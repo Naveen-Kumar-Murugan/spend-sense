@@ -49,5 +49,44 @@ export class UserRepository {
             throw new StorageError(`Failed to save user: ${(err as Error).message}`);
         }
     }
+
+    /**
+     * Partial update of the PROFILE item (e.g. saving the user's UPI ID).
+     * Creates the profile item if it does not exist yet.
+     */
+    async update(
+        userId: string,
+        updates: Partial<Pick<User, 'upiId' | 'location' | 'displayName'>>,
+    ): Promise<User | null> {
+        try {
+            const existing = await this.findById(userId);
+            const base: User =
+                existing ??
+                {
+                    userId,
+                    email: '',
+                    displayName: '',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: '',
+                };
+
+            const updated: User = {
+                ...base,
+                ...updates,
+                updatedAt: new Date().toISOString(),
+            };
+            await documentClient.send(
+                new PutCommand({
+                    TableName: this.tableName,
+                    Item: toUserItem(updated),
+                })
+            );
+            return updated;
+        } catch (err) {
+            throw new StorageError(`Failed to update user: ${(err as Error).message}`);
+        }
+    }
 }
+
+export const userRepository = new UserRepository();
 

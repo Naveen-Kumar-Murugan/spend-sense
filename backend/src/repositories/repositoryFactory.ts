@@ -1,7 +1,6 @@
 import { ITransactionRepository } from "./ITransactionRepository";
 import { InMemoryTransactionRepository } from "./InMemoryTransactionRepository";
 import { TransactionRepository } from "./TransactionRepository";
-import { buildDemoTransactions, DEMO_USER_ID } from "../data/demoTransactions";
 
 /**
  * Repository factory.

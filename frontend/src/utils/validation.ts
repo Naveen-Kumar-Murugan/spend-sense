@@ -15,6 +15,16 @@ export interface PaymentFormValues {
   subcategory: string;
   paymentMethod: PaymentMethod;
   note: string;
+  receiverUpiId: string;
+}
+
+/** UPI VPA shape, e.g. naveen@oksbi. */
+export const UPI_ID_PATTERN = /^[\w.\-]{2,64}@[a-zA-Z][\w.\-]{1,24}$/;
+
+export function validateUpiId(value: string): string | undefined {
+  if (!value.trim()) return 'Enter the receiver’s UPI ID.';
+  if (!UPI_ID_PATTERN.test(value.trim())) return 'Enter a valid UPI ID, e.g. rahul@oksbi.';
+  return undefined;
 }
 
 export const validatePaymentForm: Validator<PaymentFormValues> = (values) => {
@@ -42,6 +52,11 @@ export const validatePaymentForm: Validator<PaymentFormValues> = (values) => {
     !CATEGORY_META[values.category].subcategories.includes(values.subcategory)
   ) {
     errors.subcategory = 'That sub-category does not belong to this category.';
+  }
+
+  if (values.paymentMethod === 'UPI') {
+    const upiError = validateUpiId(values.receiverUpiId);
+    if (upiError) errors.receiverUpiId = upiError;
   }
 
   if (values.note.length > MAX_NOTE_LENGTH) {
