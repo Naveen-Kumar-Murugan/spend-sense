@@ -114,6 +114,12 @@ export interface PaymentReceipt {
   category: Category;
   subcategory: string;
   paymentMethod: PaymentMethod;
+  /** Present for UPI mode: the receiver's UPI ID. */
+  receiverUpiId?: string;
+  /** Present for UPI mode: ready-to-open UPI deep link. */
+  upiUrl?: string;
+  /** Marker that the UPI payment was initiated (never that it succeeded). */
+  initiatedStatus?: 'INITIATED';
   message: string;
   upiIntent?: UpiIntent;
   transaction?: Transaction;
@@ -141,6 +147,8 @@ export interface CreatePaymentRequest {
   note?: string;
   mode?: PaymentMode;
   currency?: string;
+  /** Receiver's UPI ID (UPI mode only), e.g. rahul@oksbi. */
+  receiverUpiId?: string;
 }
 
 export interface UpdateTransactionRequest {
@@ -171,6 +179,8 @@ export interface AuthUser {
   lastName: string;
   location?: string;
   avatarUrl?: string;
+  /** The user's own UPI VPA (e.g. naveen@oksbi). Never a UPI PIN. */
+  upiId?: string;
   plan: 'FREE' | 'PREMIUM';
   emailVerified: boolean;
 }

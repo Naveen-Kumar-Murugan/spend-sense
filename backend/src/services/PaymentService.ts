@@ -32,6 +32,12 @@ export interface PaymentReceipt {
     category: Category;
     subcategory: string;
     paymentMethod: PaymentMethod;
+    /** Present for UPI mode: the receiver's UPI ID the payment targets. */
+    receiverUpiId?: string;
+    /** Present for UPI mode: ready-to-open deep link. */
+    upiUrl?: string;
+    /** UPI surface status marker: INITIATED (never implies success). */
+    initiatedStatus?: 'INITIATED';
     message: string;
     /** Present for UPI mode: the intent the client should open. */
     upiIntent?: {
@@ -107,11 +113,14 @@ export class PaymentService {
         }
 
         const transaction = await this.record(userId, request, 'PENDING');
-        const intent = this.buildUpiIntent(transaction);
+        const intent = this.buildUpiIntent(transaction, request.receiverUpiId);
+        const receiverUpiId = intent.payeeVpa;
 
         return {
             paymentId: transaction.transactionId,
+            /** UPI intent surface status: INITIATED until independently verified. */
             status: 'PENDING',
+            initiatedStatus: 'INITIATED' as const,
             mode: 'UPI',
             amount: transaction.amount,
             currency: transaction.currency,
@@ -119,8 +128,10 @@ export class PaymentService {
             category: transaction.category,
             subcategory: transaction.subcategory,
             paymentMethod: transaction.paymentMethod,
+            receiverUpiId,
+            upiUrl: intent.uri,
             message:
-                'UPI payment intent created. Complete the payment in your UPI app. ' +
+                'UPI payment initiated. Complete the payment in your UPI app. ' +
                 'SpendSense cannot read the external app’s private result, so this transaction stays PENDING until confirmed.',
             upiIntent: intent,
             transaction,
@@ -149,14 +160,18 @@ export class PaymentService {
      * Standard UPI deep-link builder.
      *
      * Format: upi://pay?pa=<vpa>&pn=<name>&am=<amount>&cu=INR&tn=<note>&tr=<ref>
+     * All values are URL-encoded via `URLSearchParams`. The payee VPA is the
+     * receiver's UPI ID entered by the payer (falling back to the configured
+     * SpendSense VPA for legacy demo payments).
      */
-    buildUpiIntent(transaction: Transaction, payeeVpa = process.env.UPI_PAYEE_VPA || 'spendsense@upi'): UpiIntent {
+    buildUpiIntent(transaction: Transaction, receiverUpiId?: string): UpiIntent {
+        const payeeVpa = receiverUpiId?.trim() || process.env.UPI_PAYEE_VPA || 'spendsense@upi';
         const params = new URLSearchParams({
             pa: payeeVpa,
             pn: transaction.merchant,
             am: transaction.amount.toFixed(2),
             cu: transaction.currency || 'INR',
-            tn: `${CATEGORY_META[transaction.category].label} payment via SpendSense`,
+            tn: transaction.note || `${CATEGORY_META[transaction.category].label} payment via SpendSense`,
             tr: transaction.transactionId,
         });
         return {

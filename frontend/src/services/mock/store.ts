@@ -116,6 +116,9 @@ export function createPayment(request: CreatePaymentRequest): PaymentReceipt {
   if (!request.merchant.trim()) {
     throw new ApiError('MISSING_MERCHANT', 'Add who you are paying.', 400);
   }
+  if (request.mode === 'UPI' && !request.receiverUpiId?.trim()) {
+    throw new ApiError('MISSING_UPI_ID', 'Add the receiver’s UPI ID.', 400);
+  }
 
   const mode = request.mode ?? 'DEMO';
   const now = new Date().toISOString();
@@ -158,11 +161,22 @@ export function createPayment(request: CreatePaymentRequest): PaymentReceipt {
   };
 
   if (mode === 'UPI') {
+    const payeeVpa = request.receiverUpiId?.trim() || PAYEE_VPA;
     receipt.upiIntent = {
-      uri: `upi://pay?pa=${PAYEE_VPA}&pn=${encodeURIComponent(transaction.merchant)}&am=${transaction.amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`${CATEGORY_META[transaction.category].label} payment via SpendSense`)}&tr=${paymentId}`,
-      payeeVpa: PAYEE_VPA,
+      uri: `upi://pay?${new URLSearchParams({
+        pa: payeeVpa,
+        pn: transaction.merchant,
+        am: transaction.amount.toFixed(2),
+        cu: transaction.currency ?? 'INR',
+        tn: request.note?.trim() || `${CATEGORY_META[transaction.category].label} payment via SpendSense`,
+        tr: paymentId,
+      }).toString()}`,
+      payeeVpa,
       transactionRef: paymentId,
     };
+    receipt.receiverUpiId = payeeVpa;
+    receipt.upiUrl = receipt.upiIntent.uri;
+    receipt.initiatedStatus = 'INITIATED';
   }
 
   return receipt;
@@ -200,6 +214,47 @@ export function getUnusualSpends(month: string = CURRENT_MONTH): Transaction[] {
 
 export function getAllTransactions(): Transaction[] {
   return transactions;
+}
+
+/* ------------------------------------------------------------------ *
+ * Mock profile (mirrors GET/PATCH /profile on the live API).
+ * ------------------------------------------------------------------ */
+
+const PROFILE_KEY = 'spendsense.mock.profile.v1';
+
+interface MockProfile {
+  userId: string;
+  upiId: string;
+  location: string;
+}
+
+function readProfile(): MockProfile {
+  try {
+    const raw = window.localStorage.getItem(PROFILE_KEY);
+    if (raw) return JSON.parse(raw) as MockProfile;
+  } catch {
+    /* fall through to default */
+  }
+  return { userId: DEMO_USER_ID, upiId: '', location: '' };
+}
+
+export function getProfile(): MockProfile {
+  return readProfile();
+}
+
+export function updateProfile(patch: { upiId?: string; location?: string }): MockProfile & { updatedAt: string } {
+  const current = readProfile();
+  const updated: MockProfile = {
+    userId: current.userId,
+    upiId: patch.upiId !== undefined ? patch.upiId : current.upiId,
+    location: patch.location !== undefined ? patch.location : current.location,
+  };
+  try {
+    window.localStorage.setItem(PROFILE_KEY, JSON.stringify(updated));
+  } catch {
+    /* storage unavailable — profile simply will not survive a reload */
+  }
+  return { ...updated, updatedAt: new Date().toISOString() };
 }
 
 /**

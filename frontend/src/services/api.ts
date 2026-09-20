@@ -87,8 +87,30 @@ export async function createUpiIntent(payload: CreatePaymentRequest): Promise<Pa
       merchant: payload.merchant,
       category: payload.category,
       paymentMethod: payload.paymentMethod,
+      receiverUpiId: payload.receiverUpiId,
+      note: payload.note,
     },
   });
+}
+
+/** Reads the signed-in user's PROFILE item (own UPI ID, etc.). */
+export async function getProfile(): Promise<{ userId: string; upiId: string; location: string }> {
+  if (config.useMocks) {
+    await mock.latency(200);
+    return mock.getProfile();
+  }
+  return request('/profile');
+}
+
+/** Saves the user's own UPI ID (and other profile fields) to their PROFILE item. */
+export async function updateProfileApi(
+  patch: { upiId?: string; location?: string },
+): Promise<{ userId: string; upiId: string; location: string; updatedAt: string }> {
+  if (config.useMocks) {
+    await mock.latency(400);
+    return mock.updateProfile(patch);
+  }
+  return request('/profile', { method: 'PATCH', body: patch });
 }
 
 export async function getInsights(month?: string): Promise<InsightsResponse> {

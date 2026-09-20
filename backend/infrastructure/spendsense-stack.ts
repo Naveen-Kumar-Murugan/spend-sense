@@ -44,9 +44,11 @@ export class SpendSenseStack extends Stack {
         const api = new SpendSenseApi(this, 'Api', {
             userPool: auth.userPool,
             createPayment: functions.createPayment,
+            confirmPayment: functions.confirmPayment,
             transactions: functions.transactions,
             dashboard: functions.dashboard,
             insights: functions.insights,
+            profile: functions.profile,
         });
 
         new CfnOutput(this, 'UserPoolId', {

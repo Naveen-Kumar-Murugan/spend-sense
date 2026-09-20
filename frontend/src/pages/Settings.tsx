@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/useToast';
 import { toUserMessage } from '@/services/errors';
 import { resetMockData } from '@/services/mock/store';
 import { config } from '@/services/config';
+import { UPI_ID_PATTERN } from '@/utils/validation';
 import { cn } from '@/lib/utils';
 
 type Section = 'profile' | 'preferences' | 'security';
@@ -35,7 +36,9 @@ export default function Settings() {
     firstName: user?.firstName ?? '',
     lastName: user?.lastName ?? '',
     email: user?.email ?? '',
+    upiId: user?.upiId ?? '',
   });
+  const [upiError, setUpiError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [preferences, setPreferences] = useState({
     emailSummaries: true,
@@ -48,13 +51,20 @@ export default function Settings() {
   const dirty =
     draft.firstName !== user.firstName ||
     draft.lastName !== user.lastName ||
-    draft.email !== user.email;
+    draft.email !== user.email ||
+    draft.upiId !== (user.upiId ?? '');
 
   const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const trimmedUpi = draft.upiId.trim();
+    if (trimmedUpi && !UPI_ID_PATTERN.test(trimmedUpi)) {
+      setUpiError('Enter a valid UPI ID, e.g. naveen@oksbi.');
+      return;
+    }
+    setUpiError(null);
     setSaving(true);
     try {
-      await updateProfile(draft);
+      await updateProfile({ ...draft, upiId: trimmedUpi || undefined });
       notify('Profile updated.');
     } catch (cause) {
       notify(toUserMessage(cause), 'error');
@@ -158,6 +168,31 @@ export default function Settings() {
                       onChange={(event) => setDraft({ ...draft, email: event.target.value })}
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="settings-upi">Your UPI ID (optional)</Label>
+                    <Input
+                      id="settings-upi"
+                      value={draft.upiId}
+                      onChange={(event) => {
+                        setUpiError(null);
+                        setDraft({ ...draft, upiId: event.target.value });
+                      }}
+                      placeholder="naveen@oksbi"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      aria-invalid={Boolean(upiError)}
+                    />
+                    {upiError ? (
+                      <p role="alert" className="mt-1.5 text-[13px] text-danger">
+                        {upiError}
+                      </p>
+                    ) : (
+                      <p className="mt-1.5 text-xs text-ink-faint">
+                        Your own UPI VPA (like naveen@oksbi), saved with your profile. SpendSense
+                        never asks for your UPI PIN.
+                      </p>
+                    )}
+                  </div>
 
                   <div className="flex justify-end gap-3 border-t border-line pt-5">
                     <Button
@@ -169,6 +204,7 @@ export default function Settings() {
                           firstName: user.firstName,
                           lastName: user.lastName,
                           email: user.email,
+                          upiId: user.upiId ?? '',
                         })
                       }
                     >

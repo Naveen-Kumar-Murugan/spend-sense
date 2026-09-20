@@ -1,16 +1,24 @@
-import type * as React from 'react';
-import { useMemo, useState } from 'react';
-import { IndianRupee } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input, Select, Textarea } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { CATEGORY_META, CATEGORY_ORDER, QUICK_MERCHANTS } from '@/constants/categories';
-import { MAX_NOTE_LENGTH } from '@/constants';
-import type { Category, PaymentMethod } from '@/types';
-import { hasErrors, validatePaymentForm, type FieldErrors, type PaymentFormValues } from '@/utils/validation';
-import { titleCase } from '@/utils/format';
-import { cn } from '@/lib/utils';
-import { PaymentMethodPicker } from './PaymentMethodPicker';
+import type * as React from "react";
+import { useMemo, useState } from "react";
+import { IndianRupee } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input, Select, Textarea } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  CATEGORY_META,
+  CATEGORY_ORDER,
+  QUICK_MERCHANTS,
+} from "@/constants/categories";
+import { MAX_NOTE_LENGTH } from "@/constants";
+import type { Category, PaymentMethod } from "@/types";
+import {
+  hasErrors,
+  validatePaymentForm,
+  type FieldErrors,
+  type PaymentFormValues,
+} from "@/utils/validation";
+import { titleCase } from "@/utils/format";
+import { cn } from "@/lib/utils";
 
 export interface PaymentSubmitValues {
   amount: number;
@@ -19,7 +27,8 @@ export interface PaymentSubmitValues {
   subcategory: string;
   paymentMethod: PaymentMethod;
   note?: string;
-  mode: 'DEMO' | 'UPI';
+  mode: "DEMO" | "UPI";
+  receiverUpiId?: string;
 }
 
 interface Props {
@@ -29,12 +38,13 @@ interface Props {
 }
 
 const INITIAL: PaymentFormValues = {
-  amount: '',
-  merchant: '',
-  category: '',
-  subcategory: '',
-  paymentMethod: 'UPI',
-  note: '',
+  amount: "",
+  merchant: "",
+  category: "",
+  subcategory: "",
+  paymentMethod: "UPI",
+  note: "",
+  receiverUpiId: "",
 };
 
 const QUICK_AMOUNTS = [199, 499, 1000, 2500];
@@ -42,31 +52,46 @@ const QUICK_AMOUNTS = [199, 499, 1000, 2500];
 export function PaymentForm({ submitting, error, onSubmit }: Props) {
   const [values, setValues] = useState<PaymentFormValues>(INITIAL);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [mode, setMode] = useState<'DEMO' | 'UPI'>('DEMO');
+  const [mode, setMode] = useState<"DEMO" | "UPI">("DEMO");
 
-  const errors: FieldErrors<PaymentFormValues> = useMemo(() => validatePaymentForm(values), [values]);
+  const errors: FieldErrors<PaymentFormValues> = useMemo(
+    () => validatePaymentForm(values),
+    [values],
+  );
   const showError = (field: keyof PaymentFormValues): string | undefined =>
     touched[field] ? errors[field] : undefined;
 
-  const set = (patch: Partial<PaymentFormValues>) => setValues((current) => ({ ...current, ...patch }));
+  const set = (patch: Partial<PaymentFormValues>) =>
+    setValues((current) => ({ ...current, ...patch }));
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setTouched({ amount: true, merchant: true, category: true, subcategory: true, note: true });
+    setTouched({
+      amount: true,
+      merchant: true,
+      category: true,
+      subcategory: true,
+      note: true,
+      receiverUpiId: true,
+    });
     if (hasErrors(errors) || !values.category) return;
 
     onSubmit({
       amount: Number(values.amount),
       merchant: values.merchant.trim(),
       category: values.category,
-      subcategory: values.subcategory || CATEGORY_META[values.category].subcategories[0],
+      subcategory:
+        values.subcategory || CATEGORY_META[values.category].subcategories[0],
       paymentMethod: values.paymentMethod,
       note: values.note.trim() || undefined,
       mode,
+      receiverUpiId: mode === "UPI" ? values.receiverUpiId.trim() : undefined,
     });
   };
 
-  const subcategories = values.category ? CATEGORY_META[values.category].subcategories : [];
+  const subcategories = values.category
+    ? CATEGORY_META[values.category].subcategories
+    : [];
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-7">
@@ -84,21 +109,29 @@ export function PaymentForm({ submitting, error, onSubmit }: Props) {
               id="amount"
               inputMode="decimal"
               value={values.amount}
-              onChange={(event) => set({ amount: event.target.value.replace(/[^\d.]/g, '') })}
+              onChange={(event) =>
+                set({ amount: event.target.value.replace(/[^\d.]/g, "") })
+              }
               onBlur={() => setTouched((t) => ({ ...t, amount: true }))}
               placeholder="0"
-              aria-invalid={Boolean(showError('amount'))}
-              aria-describedby={showError('amount') ? 'amount-error' : undefined}
+              aria-invalid={Boolean(showError("amount"))}
+              aria-describedby={
+                showError("amount") ? "amount-error" : undefined
+              }
               className={cn(
-                'tnum h-16 w-full rounded-2xl border border-line bg-surface-sunken pl-12 pr-4 text-3xl font-extrabold tracking-[-0.03em] text-ink',
-                'placeholder:text-ink-faint focus:border-primary/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15',
-                showError('amount') && 'border-danger/60 focus:ring-danger/20',
+                "tnum h-16 w-full rounded-2xl border border-line bg-surface-sunken pl-12 pr-4 text-3xl font-extrabold tracking-[-0.03em] text-ink",
+                "placeholder:text-ink-faint focus:border-primary/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/15",
+                showError("amount") && "border-danger/60 focus:ring-danger/20",
               )}
             />
           </div>
-          {showError('amount') ? (
-            <p id="amount-error" role="alert" className="mt-1.5 text-[13px] text-danger">
-              {showError('amount')}
+          {showError("amount") ? (
+            <p
+              id="amount-error"
+              role="alert"
+              className="mt-1.5 text-[13px] text-danger"
+            >
+              {showError("amount")}
             </p>
           ) : (
             <div className="mt-2.5 flex flex-wrap gap-2">
@@ -109,7 +142,7 @@ export function PaymentForm({ submitting, error, onSubmit }: Props) {
                   onClick={() => set({ amount: String(amount) })}
                   className="rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-ink-muted transition-colors hover:border-primary/40 hover:text-primary"
                 >
-                  ₹{amount.toLocaleString('en-IN')}
+                  ₹{amount.toLocaleString("en-IN")}
                 </button>
               ))}
             </div>
@@ -124,12 +157,12 @@ export function PaymentForm({ submitting, error, onSubmit }: Props) {
             onChange={(event) => set({ merchant: event.target.value })}
             onBlur={() => setTouched((t) => ({ ...t, merchant: true }))}
             placeholder="Swiggy, Uber, Airtel…"
-            aria-invalid={Boolean(showError('merchant'))}
+            aria-invalid={Boolean(showError("merchant"))}
             autoComplete="off"
           />
-          {showError('merchant') && (
+          {showError("merchant") && (
             <p role="alert" className="mt-1.5 text-[13px] text-danger">
-              {showError('merchant')}
+              {showError("merchant")}
             </p>
           )}
           <div className="mt-2.5 flex flex-wrap gap-2">
@@ -138,13 +171,17 @@ export function PaymentForm({ submitting, error, onSubmit }: Props) {
                 key={item.merchant}
                 type="button"
                 onClick={() =>
-                  set({ merchant: item.merchant, category: item.category, subcategory: item.subcategory })
+                  set({
+                    merchant: item.merchant,
+                    category: item.category,
+                    subcategory: item.subcategory,
+                  })
                 }
                 className={cn(
-                  'rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
+                  "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
                   values.merchant === item.merchant
-                    ? 'border-primary bg-primary-50 text-primary-700'
-                    : 'border-line text-ink-muted hover:border-primary/40 hover:text-primary',
+                    ? "border-primary bg-primary-50 text-primary-700"
+                    : "border-line text-ink-muted hover:border-primary/40 hover:text-primary",
                 )}
               >
                 {item.merchant}
@@ -161,10 +198,13 @@ export function PaymentForm({ submitting, error, onSubmit }: Props) {
               value={values.category}
               onChange={(event) => {
                 const next = event.target.value as Category;
-                set({ category: next, subcategory: next ? CATEGORY_META[next].subcategories[0] : '' });
+                set({
+                  category: next,
+                  subcategory: next ? CATEGORY_META[next].subcategories[0] : "",
+                });
               }}
               onBlur={() => setTouched((t) => ({ ...t, category: true }))}
-              aria-invalid={Boolean(showError('category'))}
+              aria-invalid={Boolean(showError("category"))}
             >
               <option value="">Choose a category</option>
               {CATEGORY_ORDER.map((category) => (
@@ -173,9 +213,9 @@ export function PaymentForm({ submitting, error, onSubmit }: Props) {
                 </option>
               ))}
             </Select>
-            {showError('category') && (
+            {showError("category") && (
               <p role="alert" className="mt-1.5 text-[13px] text-danger">
-                {showError('category')}
+                {showError("category")}
               </p>
             )}
           </div>
@@ -188,7 +228,9 @@ export function PaymentForm({ submitting, error, onSubmit }: Props) {
               onChange={(event) => set({ subcategory: event.target.value })}
               disabled={!values.category}
             >
-              {subcategories.length === 0 && <option value="">Pick a category first</option>}
+              {subcategories.length === 0 && (
+                <option value="">Pick a category first</option>
+              )}
               {subcategories.map((option) => (
                 <option key={option} value={option}>
                   {titleCase(option)}
@@ -198,10 +240,31 @@ export function PaymentForm({ submitting, error, onSubmit }: Props) {
           </div>
         </div>
 
-        <PaymentMethodPicker
+        {/* <PaymentMethodPicker
           value={values.paymentMethod}
           onChange={(paymentMethod) => set({ paymentMethod })}
-        />
+        /> */}
+
+        {mode === "UPI" && (
+          <div>
+            <Label htmlFor="receiverUpiId">Receiver UPI ID</Label>
+            <Input
+              id="receiverUpiId"
+              value={values.receiverUpiId}
+              onChange={(event) => set({ receiverUpiId: event.target.value })}
+              onBlur={() => setTouched((t) => ({ ...t, receiverUpiId: true }))}
+              placeholder="rahul@oksbi"
+              autoCapitalize="none"
+              autoCorrect="off"
+              aria-invalid={Boolean(showError("receiverUpiId"))}
+            />
+            {showError("receiverUpiId") && (
+              <p role="alert" className="mt-1.5 text-[13px] text-danger">
+                {showError("receiverUpiId")}
+              </p>
+            )}
+          </div>
+        )}
 
         <div>
           <Label htmlFor="note">Note (optional)</Label>
@@ -218,26 +281,30 @@ export function PaymentForm({ submitting, error, onSubmit }: Props) {
         </div>
 
         <div className="rounded-2xl border border-line bg-surface-sunken/70 p-4">
-          <p className="text-[13px] font-bold text-ink">How should this be paid?</p>
+          <p className="text-[13px] font-bold text-ink">
+            How should this be paid?
+          </p>
           <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
-            {(['DEMO', 'UPI'] as const).map((option) => (
+            {(["DEMO", "UPI"] as const).map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => setMode(option)}
                 aria-pressed={mode === option}
                 className={cn(
-                  'rounded-xl border bg-white px-3.5 py-3 text-left transition-colors',
-                  mode === option ? 'border-primary ring-2 ring-primary/15' : 'border-line hover:border-primary/40',
+                  "rounded-xl border bg-white px-3.5 py-3 text-left transition-colors",
+                  mode === option
+                    ? "border-primary ring-2 ring-primary/15"
+                    : "border-line hover:border-primary/40",
                 )}
               >
                 <span className="block text-[13px] font-bold text-ink">
-                  {option === 'DEMO' ? 'Record it here' : 'Open my UPI app'}
+                  {option === "DEMO" ? "Record it here" : "Open my UPI app"}
                 </span>
                 <span className="mt-0.5 block text-xs text-ink-muted">
-                  {option === 'DEMO'
-                    ? 'Logs the payment straight away'
-                    : 'Creates a UPI link, stays pending until you confirm'}
+                  {option === "DEMO"
+                    ? "Logs the payment straight away"
+                    : "Creates a UPI link, stays pending until you confirm"}
                 </span>
               </button>
             ))}
@@ -246,13 +313,20 @@ export function PaymentForm({ submitting, error, onSubmit }: Props) {
       </fieldset>
 
       {error && (
-        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-[13px] text-danger">
+        <p
+          role="alert"
+          className="rounded-xl bg-red-50 px-4 py-3 text-[13px] text-danger"
+        >
           {error}
         </p>
       )}
 
       <Button type="submit" size="lg" className="w-full" loading={submitting}>
-        {submitting ? 'Processing…' : mode === 'UPI' ? 'Create UPI request' : 'Pay now'}
+        {submitting
+          ? "Processing…"
+          : mode === "UPI"
+            ? "Create UPI request"
+            : "Pay now"}
       </Button>
     </form>
   );

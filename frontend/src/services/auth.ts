@@ -22,6 +22,7 @@ import {
 import type { AuthUser } from '@/types';
 import { ApiError } from './errors';
 import { isCognitoConfigured } from './config';
+import { getProfile, updateProfileApi } from './api';
 
 export interface Credentials {
   email: string;
@@ -136,7 +137,16 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
   try {
     const { userId } = await amplifyGetCurrentUser();
-    return mapUser(userId, await fetchUserAttributes());
+    const user = mapUser(userId, await fetchUserAttributes());
+    // The UPI ID lives on the user's DynamoDB PROFILE item, not in Cognito
+    // attributes — merge it in best-effort so the UI can prefill it.
+    try {
+      const profile = await getProfile();
+      if (profile.upiId) user.upiId = profile.upiId;
+    } catch {
+      /* profile unavailable (e.g. not provisioned yet) — simply no UPI ID */
+    }
+    return user;
   } catch {
     return null;
   }
@@ -295,6 +305,9 @@ export async function updateProfile(patch: Partial<AuthUser>): Promise<AuthUser>
     if (!session) throw new ApiError('UNAUTHORIZED', 'Sign in again to update your profile.', 401);
     const user = { ...session.user, ...patch };
     writeSession(user);
+    if (patch.upiId !== undefined) {
+      await updateProfileApi({ upiId: patch.upiId });
+    }
     return user;
   }
 
@@ -308,6 +321,11 @@ export async function updateProfile(patch: Partial<AuthUser>): Promise<AuthUser>
     });
   } catch (cause) {
     throw toApiError(cause);
+  }
+
+  // The UPI ID is stored on the PROFILE item in DynamoDB, never in Cognito.
+  if (patch.upiId !== undefined) {
+    await updateProfileApi({ upiId: patch.upiId });
   }
 
   const user = await getCurrentUser();

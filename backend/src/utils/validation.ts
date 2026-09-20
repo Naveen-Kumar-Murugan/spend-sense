@@ -56,9 +56,30 @@ export const createPaymentSchema = z.object({
     note: z.string().trim().max(280).optional(),
     mode: z.enum(['DEMO', 'UPI']).default('DEMO'),
     currency: z.string().trim().length(3).default('INR'),
+    /** Present for UPI mode: the payee VPA entered by the payer. */
+    receiverUpiId: z.string().trim().max(100).optional(),
 });
 
 export type CreatePaymentRequest = z.infer<typeof createPaymentSchema>;
+
+/** Loose-but-real VPA shape: local-part @ handle, e.g. rahul@oksbi. */
+export const UPI_ID_PATTERN = /^[\w.\-]{2,64}@[a-zA-Z][\w.\-]{1,24}$/;
+
+export function validateUpiId(value: string): boolean {
+    return UPI_ID_PATTERN.test(value.trim());
+}
+
+export const updateProfileSchema = z
+    .object({
+        upiId: z
+            .string()
+            .trim()
+            .refine((v) => v.length === 0 || validateUpiId(v), 'Enter a valid UPI ID like naveen@oksbi.'),
+        location: z.string().trim().max(80).optional(),
+    })
+    .refine((v) => Object.keys(v).length > 0, 'At least one field must be provided.');
+
+export type UpdateProfileRequest = z.infer<typeof updateProfileSchema>;
 
 export const updateTransactionSchema = z
     .object({
@@ -105,6 +126,13 @@ export const createUpiIntentSchema = z.object({
         .refine((v) => v.length > 0, 'Merchant is required.'),
     category: categoryEnum,
     paymentMethod: paymentMethodEnum.default('UPI'),
+    /** The receiver's VPA, e.g. rahul@oksbi. Required for a UPI intent. */
+    receiverUpiId: z
+        .string({ required_error: 'Receiver UPI ID is required.' })
+        .trim()
+        .min(1, 'Receiver UPI ID is required.')
+        .refine(validateUpiId, 'Enter a valid UPI ID like rahul@oksbi.'),
+    note: z.string().trim().max(280).optional(),
 });
 
 export type CreateUpiIntentRequest = z.infer<typeof createUpiIntentSchema>;

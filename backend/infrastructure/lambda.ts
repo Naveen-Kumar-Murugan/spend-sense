@@ -13,9 +13,11 @@ export interface SpendSenseFunctionsProps {
 
 export class SpendSenseFunctions extends Construct {
     public readonly createPayment: NodejsFunction;
+    public readonly confirmPayment: NodejsFunction;
     public readonly transactions: NodejsFunction;
     public readonly dashboard: NodejsFunction;
     public readonly insights: NodejsFunction;
+    public readonly profile: NodejsFunction;
 
     constructor(scope: Construct, id: string, props: SpendSenseFunctionsProps) {
         super(scope, id);
@@ -52,8 +54,10 @@ export class SpendSenseFunctions extends Construct {
         };
 
         this.createPayment = makeFunction('CreatePayment', 'createPayment.ts');
+        this.confirmPayment = makeFunction('ConfirmPayment', 'confirmPayment.ts');
         this.transactions = makeFunction('Transactions', 'getTransactions.ts');
         this.dashboard = makeFunction('Dashboard', 'getDashboard.ts');
         this.insights = makeFunction('Insights', 'getInsights.ts');
+        this.profile = makeFunction('Profile', 'getProfile.ts');
     }
 }

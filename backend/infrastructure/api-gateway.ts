@@ -20,9 +20,11 @@ import { Construct } from 'constructs';
 export interface SpendSenseApiProps {
     userPool: UserPool;
     createPayment: NodejsFunction;
+    confirmPayment: NodejsFunction;
     transactions: NodejsFunction;
     dashboard: NodejsFunction;
     insights: NodejsFunction;
+    profile: NodejsFunction;
 }
 
 export class SpendSenseApi extends Construct {
@@ -59,9 +61,12 @@ export class SpendSenseApi extends Construct {
 
         // POST /payments
         // POST /payments/upi-intent
+        // POST /payments/{transactionId}/confirm
         const payments = this.api.root.addResource('payments');
         payments.addMethod('POST', new LambdaIntegration(props.createPayment), authed);
         payments.addResource('upi-intent').addMethod('POST', new LambdaIntegration(props.createPayment), authed);
+        const payment = payments.addResource('{transactionId}');
+        payment.addResource('confirm').addMethod('POST', new LambdaIntegration(props.confirmPayment), authed);
 
         // GET   /transactions
         // GET   /transactions/{transactionId}
@@ -74,6 +79,12 @@ export class SpendSenseApi extends Construct {
 
         //GET /dashboard
         this.api.root.addResource('dashboard').addMethod('GET', new LambdaIntegration(props.dashboard), authed);
+
+        // GET   /profile
+        // PATCH /profile  (save the user's own UPI ID on the PROFILE item)
+        const profile = this.api.root.addResource('profile');
+        profile.addMethod('GET', new LambdaIntegration(props.profile), authed);
+        profile.addMethod('PATCH', new LambdaIntegration(props.profile), authed);
 
         // GET  /insights
         // POST /insights/query
