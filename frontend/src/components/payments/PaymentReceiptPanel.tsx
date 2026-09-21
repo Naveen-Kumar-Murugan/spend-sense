@@ -1,5 +1,4 @@
 import type * as React from "react";
-import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { CheckCircle2, Clock, Copy, ExternalLink, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ interface Props {
   onOpenUpiApp: () => void;
   onConfirmUpi: () => void;
   onNewPayment: () => void;
+  onViewReceipt: () => void;
 }
 
 export function PaymentReceiptPanel({
@@ -23,6 +23,7 @@ export function PaymentReceiptPanel({
   onOpenUpiApp,
   onConfirmUpi,
   onNewPayment,
+  onViewReceipt,
 }: Props) {
   const pending = receipt.status === "PENDING";
 
@@ -138,10 +139,8 @@ export function PaymentReceiptPanel({
           <Plus className="h-4 w-4" aria-hidden />
           Another payment
         </Button>
-        <Button asChild variant="subtle" className="flex-1">
-          <Link to={`/app/transactions/${receipt.paymentId}`}>
-            View transaction
-          </Link>
+        <Button variant="subtle" className="flex-1" onClick={onViewReceipt}>
+          View transaction
         </Button>
       </div>
     </div>

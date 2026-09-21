@@ -1,15 +1,22 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Sparkles } from 'lucide-react';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PaymentForm, type PaymentSubmitValues } from '@/components/payments/PaymentForm';
-import { PaymentReceiptPanel } from '@/components/payments/PaymentReceiptPanel';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/useToast';
-import { confirmUpiPayment, openUpiApp, submitPayment } from '@/services/payments';
-import { toUserMessage } from '@/services/errors';
-import type { PaymentReceipt } from '@/types';
-import { formatCurrency } from '@/utils/format';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ShieldCheck, Sparkles } from "lucide-react";
+import { PageHeader } from "@/components/common/PageHeader";
+import {
+  PaymentForm,
+  type PaymentSubmitValues,
+} from "@/components/payments/PaymentForm";
+import { PaymentReceiptPanel } from "@/components/payments/PaymentReceiptPanel";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/useToast";
+import {
+  confirmUpiPayment,
+  openUpiApp,
+  submitPayment,
+} from "@/services/payments";
+import { toUserMessage } from "@/services/errors";
+import type { PaymentReceipt } from "@/types";
+import { formatCurrency } from "@/utils/format";
 
 export default function Payment() {
   const { notify } = useToast();
@@ -25,18 +32,28 @@ export default function Payment() {
     try {
       const result = await submitPayment(values);
       setReceipt(result);
-      notify(
-        result.status === 'PENDING'
-          ? 'UPI request created. Confirm once you have paid.'
-          : `${formatCurrency(result.amount, { decimals: false })} paid to ${result.merchant}.`,
-      );
+
+      if (result.status !== "PENDING") {
+        notify(
+          `${formatCurrency(result.amount, { decimals: false })} paid to ${result.merchant}.`,
+        );
+        navigate(`/app/transactions/${result.paymentId}`, { replace: true });
+        return;
+      }
+
+      notify("UPI request created. Confirm once you have paid.");
     } catch (cause) {
       const message = toUserMessage(cause);
       setError(message);
-      notify(message, 'error');
+      notify(message, "error");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleViewReceipt = () => {
+    if (!receipt) return;
+    navigate(`/app/transactions/${receipt.paymentId}`, { replace: true });
   };
 
   const handleConfirmUpi = async () => {
@@ -44,13 +61,16 @@ export default function Payment() {
     setConfirming(true);
     try {
       const transaction = await confirmUpiPayment(receipt.paymentId);
-      setReceipt({ ...receipt, status: transaction.status, message: 'Payment recorded successfully.', transaction });
-      notify('Payment confirmed and added to your history.');
-      // Confirmation succeeded — take the user to the dashboard, where the
-      // freshly confirmed transaction now shows up in their history.
-      navigate('/app', { replace: true });
+      setReceipt({
+        ...receipt,
+        status: transaction.status,
+        message: "Payment recorded successfully.",
+        transaction,
+      });
+      notify("Payment confirmed and added to your history.");
+      navigate(`/app/transactions/${receipt.paymentId}`, { replace: true });
     } catch (cause) {
-      notify(toUserMessage(cause), 'error');
+      notify(toUserMessage(cause), "error");
     } finally {
       setConfirming(false);
     }
@@ -71,17 +91,22 @@ export default function Payment() {
               confirming={confirming}
               onOpenUpiApp={() => {
                 if (receipt.upiIntent && !openUpiApp(receipt.upiIntent.uri)) {
-                  notify('No UPI app could be opened on this device.', 'error');
+                  notify("No UPI app could be opened on this device.", "error");
                 }
               }}
               onConfirmUpi={handleConfirmUpi}
+              onViewReceipt={handleViewReceipt}
               onNewPayment={() => {
                 setReceipt(null);
                 setError(null);
               }}
             />
           ) : (
-            <PaymentForm submitting={submitting} error={error} onSubmit={handleSubmit} />
+            <PaymentForm
+              submitting={submitting}
+              error={error}
+              onSubmit={handleSubmit}
+            />
           )}
         </Card>
 
@@ -95,14 +120,18 @@ export default function Payment() {
             </CardHeader>
             <CardContent className="space-y-4 text-[13px] leading-relaxed text-ink-muted">
               <p>
-                <span className="font-semibold text-ink">Record it here</span> logs the payment
-                immediately — useful for cash, cards and anything you have already paid.
+                <span className="font-semibold text-ink">Record it here</span>{" "}
+                logs the payment immediately — useful for cash, cards and
+                anything you have already paid.
               </p>
               <p>
-                <span className="font-semibold text-ink">Open my UPI app</span> builds a{' '}
-                <code className="rounded bg-surface-sunken px-1 py-0.5 text-[12px]">upi://</code> link and
-                hands it to your payment app. SpendSense cannot read the result, so the payment stays
-                pending until you confirm it.
+                <span className="font-semibold text-ink">Open my UPI app</span>{" "}
+                builds a{" "}
+                <code className="rounded bg-surface-sunken px-1 py-0.5 text-[12px]">
+                  upi://
+                </code>{" "}
+                link and hands it to your payment app. SpendSense cannot read
+                the result, so the payment stays pending until you confirm it.
               </p>
             </CardContent>
           </Card>
@@ -110,10 +139,13 @@ export default function Payment() {
           <Card className="border-0 bg-gradient-to-br from-primary to-violet-600 text-white">
             <CardContent className="pt-5 sm:pt-6">
               <Sparkles className="h-5 w-5" aria-hidden />
-              <p className="mt-3 text-[15px] font-bold leading-snug">Categorise as you go</p>
+              <p className="mt-3 text-[15px] font-bold leading-snug">
+                Categorise as you go
+              </p>
               <p className="mt-1.5 text-[13px] leading-relaxed text-white/85">
-                Every payment you file correctly makes your insights sharper. You can always change a
-                category later from the transaction page.
+                Every payment you file correctly makes your insights sharper.
+                You can always change a category later from the transaction
+                page.
               </p>
             </CardContent>
           </Card>
